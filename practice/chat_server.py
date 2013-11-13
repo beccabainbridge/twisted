@@ -1,7 +1,10 @@
+import re
 from twisted.internet.protocol import ServerFactory, Protocol
 from twisted.protocols.basic import LineReceiver
+import sys
+sys.path.append('/home/becca/code/spellCheck')
 from spell_checker import SpellChecker
-import re
+from lol_cat_translator import LolCatTranslator
 
 class ChatProtocol(LineReceiver):
 
@@ -89,9 +92,13 @@ class ChatFactory(ServerFactory):
     def spell_check(self, message):
         return self.service.spell_check(message)
 
+    def lol_cat(self, message):
+        return self.service.lol_cat(message)
+
 class TransformService(object):
     def __init__(self):
         self.spellChecker = SpellChecker()
+        self.lolCatTranslator = LolCatTranslator()
 
     def spell_check(self, message):
         words = re.findall("\w+'*\w+", message)
@@ -100,6 +107,9 @@ class TransformService(object):
             if not correct:
                 message = message.replace(word, correct_spelling)
         return message
+
+    def lol_cat(self, message):
+        return self.lolCatTranslator.translate_message(message)
 
 def main(ip, port):
     service = TransformService()
