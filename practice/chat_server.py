@@ -111,12 +111,7 @@ class TransformService(object):
         self.lolCatTranslator = LolCatTranslator()
 
     def spell_check(self, message):
-        words = re.findall("\w+'*\w+", message)
-        for word in words:
-            correct, correct_spelling = self.spellChecker.spell_check(word)
-            if not correct:
-                message = message.replace(word, correct_spelling)
-        return message
+        return self.spellChecker.spell_check_message(message)
 
     def lol_cat(self, message):
         return self.lolCatTranslator.translate_message(message)
