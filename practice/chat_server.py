@@ -1,9 +1,11 @@
+#!/usr/bin/env python
 import re
 from twisted.internet.protocol import ServerFactory, Protocol
 from twisted.protocols.basic import LineReceiver
 import sys
 sys.path.append('/home/becca/code/spellCheck')
 from spell_checker import SpellChecker
+sys.path.append('/home/becca/code/lolCat')
 from lol_cat_translator import LolCatTranslator
 
 class ChatProtocol(LineReceiver):
@@ -14,11 +16,7 @@ class ChatProtocol(LineReceiver):
 
     def connectionMade(self):
         print "accepted client at %s" % self.addr
-        self.state = "GETNAME"
-        self.name = None
-        self.chat_commands = {'exit': self.transport.loseConnection, 'listall': self.list_clients, 'private:': self.send_private_msg, 'transform:': self.transform_msg}
-        self.sendLine("Welcome to chat! Type 'listall' to see everyone in the chat. Type 'private:' followed \nby the name of a user and your message to send a private message to another user. \nType 'exit' to leave the chat.\n")
-        self.sendLine("What is your name?")
+        self.start_chat()
 
     def connectionLost(self, reason):
         print "lost connection with client at %s" % self.addr
@@ -28,26 +26,39 @@ class ChatProtocol(LineReceiver):
     def dataReceived(self, data):
         data = data.strip()
         if self.state == "GETNAME":
-            if data in self.factory.users:
-                self.sendLine("Name is already taken. Please choose a new name.")
-            else:
-                self.name = data
-                self.factory.users[self.name] = self
-                self.state = "CHAT"
-                self.send_message("%s has entered chat" % self.name)
+            self.set_name(data)
         elif self.state == "CHAT":
-            if data == '':
-                return
-            command = data.split()[0]
-            if command in self.chat_commands:
-                if len(data.split()) == 1:
-                    self.chat_commands[command]()
-                else:
-                    transform = data.split()[1]
-                    msg = data[len(command)+len(transform)+2:]
-                    self.chat_commands[command](transform, msg)
+            self.parse_and_send_msg(data)
+
+    def start_chat(self):
+        self.state = "GETNAME"
+        self.name = None
+        self.chat_commands = {'exit': self.transport.loseConnection, 'listall': self.list_clients, 'private:': self.send_private_msg, 'transform:': self.transform_msg}
+        self.sendLine("Welcome to chat! Type 'listall' to see everyone in the chat. Type 'private:' followed \nby the name of a user and your message to send a private message to another user. \nType 'exit' to leave the chat.\n")
+        self.sendLine("What is your name?")
+
+    def set_name(self, name):
+        if name in self.factory.users:pp
+            self.sendLine("Name is already taken. Please choose a new name.")
+        else:
+            self.name = name
+            self.factory.users[self.name] = self
+            self.state = "CHAT"
+            self.send_message("%s has entered chat" % self.name)
+
+    def parse_and_send_msg(self, data):
+        if data == '':
+            return
+        command = data.split()[0]
+        if command in self.chat_commands:
+            if len(data.split()) == 1:
+                self.chat_commands[command]()
             else:
-                self.send_message(self.name + ": " + data)
+                transform = data.split()[1]
+                msg = data[len(command)+len(transform)+2:]
+                self.chat_commands[command](transform, msg)
+        else:
+            self.send_message(self.name + ": " + data)
 
     def list_clients(self):
         self.sendLine(", ".join(self.factory.users.keys()))
@@ -81,7 +92,6 @@ class ChatFactory(ServerFactory):
 
     def transform(self, name, message):
         func = getattr(self, name, None)
-        print func
         if func is None:
             return None
         try:
