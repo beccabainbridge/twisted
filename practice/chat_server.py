@@ -116,13 +116,9 @@ class TransformService(object):
     def lol_cat(self, message):
         return self.lolCatTranslator.translate_message(message)
 
-def main(ip, port):
-    service = TransformService()
-    factory = ChatFactory(service)
-    from twisted.internet import reactor
-    reactor.listenTCP(port, factory, interface=ip)
-    reactor.run()
 
-
-if __name__ == '__main__':
-    main('localhost', 10001)
+service = TransformService()
+factory = ChatFactory(service)
+from twisted.application import service, internet
+application = service.Application("chatserver")
+internet.TCPServer(10001, factory).setServiceParent(application)
