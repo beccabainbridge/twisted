@@ -2,6 +2,7 @@
 import re
 from twisted.internet.protocol import ServerFactory, Protocol
 from twisted.protocols.basic import LineReceiver
+from twisted.internet import defer
 import sys
 sys.path.append('/home/becca/code/spellCheck')
 from spell_checker import SpellChecker
@@ -83,11 +84,15 @@ class ChatProtocol(LineReceiver):
             self.sendLine(user + " is not in chat. Cannot send private message.")
 
     def transform_msg(self, transform, msg):
-        transformed_message = self.factory.transform(transform, msg)
-        if transformed_message is None:
-            self.sendLine(transform + " is not a valid transform. Your message was sent without a transformation.")
-            transformed_message = msg
-        self.send_message(self.name + ": " + transformed_message)
+        d = self.factory.transform(transform, msg)
+        def transform_error(res):
+            self.sendLine(res.getErrorMessage() + " Your message was sent without a transformation.")
+            return msg
+        d.addErrback(transform_error)
+        def transform_send(transformed_message):
+            self.send_message(self.name + ": " + transformed_message)
+        d.addCallback(transform_send)
+
 
 class ChatFactory(ServerFactory):
     users = {}
@@ -101,11 +106,11 @@ class ChatFactory(ServerFactory):
     def transform(self, name, message):
         func = getattr(self, name, None)
         if func is None:
-            return None
+            return defer.fail(Exception("Invalid transform."))
         try:
-            return func(message)
+            return defer.succeed(func(message))
         except:
-            return None
+            return defer.fail(Exception("Transformation failed."))
 
     def spell_check(self, message):
         return self.service.spell_check(message)
