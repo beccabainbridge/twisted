@@ -33,12 +33,20 @@ class ChatProtocol(LineReceiver):
     def start_chat(self):
         self.state = "GETNAME"
         self.name = None
-        self.chat_commands = {'exit': self.transport.loseConnection, 'listall': self.list_clients, 'private:': self.send_private_msg, 'transform:': self.transform_msg}
-        self.sendLine("Welcome to chat! Type 'listall' to see everyone in the chat. Type 'private:' followed \nby the name of a user and your message to send a private message to another user. \nType 'exit' to leave the chat.\n")
+        self.chat_commands = {'exit': self.transport.loseConnection,
+                              'listall': self.list_clients,
+                              'private:': self.send_private_msg,
+                              'transform:': self.transform_msg}
+        self.sendLine("Welcome to chat! Type 'listall' to see everyone in the " +
+                      "chat. Type 'private:' followed \nby the name of a user " +
+                      "and your message to send a private message to another " +
+                      "user. Type \n'transform:' followed by a transformation " +
+                      "(lol_cat, spell_check) and your message to \nend a " +
+                      "transformed message. Type 'exit' to leave the chat.\n")
         self.sendLine("What is your name?")
 
     def set_name(self, name):
-        if name in self.factory.users:pp
+        if name in self.factory.users:
             self.sendLine("Name is already taken. Please choose a new name.")
         else:
             self.name = name
@@ -104,6 +112,7 @@ class ChatFactory(ServerFactory):
 
     def lol_cat(self, message):
         return self.service.lol_cat(message)
+
 
 class TransformService(object):
     def __init__(self):
