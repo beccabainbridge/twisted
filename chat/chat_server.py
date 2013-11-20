@@ -9,6 +9,9 @@ from spell_checker import SpellChecker
 sys.path.append('/home/becca/code/lolCat')
 from lol_cat_translator import LolCatTranslator
 
+def catchError(err):
+    return "An error occurred in the server"
+
 class ChatProtocol(LineReceiver):
 
     def __init__(self, factory, addr):
@@ -25,11 +28,12 @@ class ChatProtocol(LineReceiver):
         del self.factory.users[self.name]
 
     def dataReceived(self, data):
-        data = data.strip()
+        d = defer.succeed(data.strip())
+        d.addErrback(catchError)
         if self.state == "GETNAME":
-            self.set_name(data)
+            d.addCallback(self.set_name)
         elif self.state == "CHAT":
-            self.parse_and_send_msg(data)
+            d.addCallback(self.parse_and_send_msg)
 
     def start_chat(self):
         self.state = "GETNAME"
