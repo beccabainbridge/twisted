@@ -24,8 +24,8 @@ class ChatProtocol(LineReceiver):
 
     def connectionLost(self, reason):
         print "lost connection with client at %s" % self.addr
-        self.send_message("%s has left chat" % self.name)
         del self.factory.users[self.name]
+        self.send_message("%s has left chat" % self.name)
 
     def dataReceived(self, data):
         d = defer.succeed(data.strip())
@@ -42,13 +42,13 @@ class ChatProtocol(LineReceiver):
                               'listall': self.list_clients,
                               'private:': self.send_private_msg,
                               'transform:': self.transform_msg}
-        self.sendLine("Welcome to chat! Type 'listall' to see everyone in the " +
-                      "chat. Type 'private:' followed \nby the name of a user " +
-                      "and your message to send a private message to another " +
+        self.sendLine("Welcome to chat! Type 'listall' to see everyone in the" +
+                      " chat. Type 'private:' followed \nby the name of a user" +
+                      " and your message to send a private message to another " +
                       "user. Type \n'transform:' followed by a transformation " +
                       "(lol_cat, spell_check) and your message to \nend a " +
-                      "transformed message. Type 'exit' to leave the chat.\n")
-        self.sendLine("What is your name?")
+                      "transformed message. Type 'exit' to leave the chat.\n" +
+                      "\nWhat is your name?")
 
     def set_name(self, name):
         if name in self.factory.users:
